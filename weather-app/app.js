@@ -1,7 +1,9 @@
-const request = require('request');
+
+console.log('Starting app');
 const yargs = require('yargs');
 
-
+const geocode = require('./geocode/geocode');
+const weather = require('./weather/weather');
 
 const argv = yargs
     .options({
@@ -16,13 +18,19 @@ const argv = yargs
     .alias('help', 'h')
     .argv;
 
-let encodeAddress = encodeURIComponent(argv.address);
+geocode.geocodeAddress(argv.address, (errorMessage, results) => {
+    if(errorMessage){
+        console.log(errorMessage);
+    } else {
+        console.log(results.address);
 
-request.get({
-    url: `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeAddress}`,
-    json: true
-}, (error, response, body) => {
-    console.log(`Address: ${body.results[0].formatted_address}`)
-    console.log(`Latitude: ${body.results[0].geometry.location.lat}`);
-    console.log(`Longitude: ${body.results[0].geometry.location.lng}`);
-})
+        weather.getWeather(results.latitude, results.longitude, (errorMessage, weatherResults) => {
+            if(errorMessage){
+                console.log(errorMessage);
+            } else {
+                console.log(`It's currently ${weatherResults.temperature}. It feels like ${weatherResults.apparentTemperature}`);
+            }
+        });
+    }
+});
+
